@@ -4,6 +4,8 @@ struct StartView: View {
     let onStart: () -> Void
     let finalText: String = "Who wants to \nbe a \ndeveloper ?"
 
+    // prevent tapping start button more than once
+    @State private var didTapStart = false
     // Animation states
     @State private var moveRectangles = false    
     @State var text: String = ""
@@ -51,8 +53,12 @@ struct StartView: View {
                 Spacer()
 
                 Button(Constant.start) {
+                    guard !didTapStart else { return }
+                    didTapStart = true
+                    
                     typeWriter()
                 }
+                .disabled(didTapStart)
                 .font(.system(size: 32, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.indigo)
                 .padding()

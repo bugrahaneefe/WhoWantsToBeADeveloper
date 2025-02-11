@@ -6,7 +6,7 @@ struct QuestionView: View {
     
     let userSelection: String?
     let correctAnswerRevealed: Bool
-        
+    
     /// User picks an option.
     let onOptionSelected: (String) -> Void
     
@@ -18,7 +18,7 @@ struct QuestionView: View {
     @State private var isImageEnlarged = false
     @Binding var jokers: JokerStatus
     @Binding var lockedWrongX2Option: String?
-
+    
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 20)
@@ -94,13 +94,16 @@ struct QuestionView: View {
                                             }
                                         }
                                     }, label: {
-                                        Text(option)
-                                            .padding()
-                                            .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 60)
-                                            .monospaced()
-                                            .foregroundStyle(Color.indigo)
-                                            .minimumScaleFactor(0.7)
-                                            .lineLimit(1)
+                                        ScrollView {
+                                            Text(option)
+                                                .padding()
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .lineLimit(nil)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                                .monospaced()
+                                                .foregroundStyle(Color.indigo)
+                                        }
+                                        .scrollIndicators(.hidden)
                                     })
                                     .foregroundColor(.white)
                                     .background(backgroundColor(for: option))
@@ -118,19 +121,19 @@ struct QuestionView: View {
             if isImageEnlarged {
                 if let image = question.image {
                     image
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 250)
-                    .cornerRadius(10)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white, lineWidth: 2)
-                    )
-                    .onTapGesture {
-                        withAnimation {
-                            isImageEnlarged.toggle()
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 250)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.white, lineWidth: 2)
+                        )
+                        .onTapGesture {
+                            withAnimation {
+                                isImageEnlarged.toggle()
+                            }
                         }
-                    }
                 }
             }
         }

@@ -10,25 +10,50 @@ struct MainView: View {
                             .opacity(0.9)
             
             if gameManager.showStartScreen {
+                
                 StartView(onStart: { gameManager.startGame() })
             } else if gameManager.showGameOver {
+                
                 NotifyView(title: Constant.gameOver, buttonTitle: Constant.restart) {
                     gameManager.restartGame()
                 }
             } else if gameManager.showCongrats {
+                
                 NotifyView(title: Constant.congrats, buttonTitle: Constant.toStartMenu) {
                     gameManager.restartGame()
                 }
             } else {
+                
                 VStack {
+                    
                     HStack {
+                        
                         Text("Level \(gameManager.currentLevel)")
                             .font(.title)
                             .foregroundStyle(Color.orange)
                             .monospaced()
                             .bold()
                             .padding()
+                        
                         Spacer()
+                        
+                        if gameManager.currentQuestion?.timeLimit != nil &&
+                            !gameManager.showLevelChart {
+                            
+                            HStack {
+                                Image(systemName: "clock.fill")
+                                    .foregroundColor(.white)
+                                Text("\(gameManager.currentCountdown)")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .monospaced()
+                            }
+                            .padding()
+                            .frame(height: 5, alignment: .leading)
+                        }
+                        
+                        Spacer()
+                        
                         Button(action: { gameManager.showLevelChart.toggle() }) {
                             Image(systemName: "chart.bar.doc.horizontal")                      .resizable()
                                 .scaledToFit()
@@ -40,10 +65,13 @@ struct MainView: View {
                     .padding(.horizontal, 10)
                     
                     ZStack {
+                        
                         if gameManager.showLevelChart {
+                            
                             LevelView(currentLevel: gameManager.currentLevel)
                                 .safeAreaPadding(40)
                         } else if let question = gameManager.currentQuestion {
+                            
                             QuestionView(
                                 question: question,
                                 visibleOptions: gameManager.visibleOptions,
@@ -57,6 +85,7 @@ struct MainView: View {
                                 lockedWrongX2Option: $gameManager.lockedWrongX2Option
                             )
                             if gameManager.showAISuggestion {
+                                
                                 AskAIView(aiDistribution: $gameManager.aiDistribution) {
                                     gameManager.showAISuggestion = false
                                 }

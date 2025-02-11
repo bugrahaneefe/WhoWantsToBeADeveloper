@@ -7,4 +7,5 @@ struct Question: Identifiable {
     let correctAnswer: String
     let level: Int
     let image: Image?
+    let timeLimit: Int?
 }

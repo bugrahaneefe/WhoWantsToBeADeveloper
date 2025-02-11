@@ -13,7 +13,7 @@ struct JokerIcon: View {
     let label: String
     let isUsed: Bool
     let action: () -> Void
-        
+    
     var body: some View {
         Button(action: {
             if !isUsed {
