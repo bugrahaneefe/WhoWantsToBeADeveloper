@@ -146,7 +146,6 @@ private enum Constant {
     static let congrats = "Congratulations! \n You are eligible to be Apple Developer."
     static let toStartMenu = "Go to Start Menu"
 }
-
 struct MainView: View {
     // MARK: - State
     @State private var showStartScreen = true
@@ -155,16 +154,24 @@ struct MainView: View {
     @State private var currentLevel = 1
     @State private var currentQuestion: Question? = nil
     
-    // Once user picks an answer:
     @State private var userSelection: String? = nil
     @State private var correctAnswerRevealed = false
     
-    // For 2-second countdown after user selection
     @State private var countdown = 2
     
-    // Game Over / Final
     @State private var showGameOver = false
     @State private var showCongrats = false
+    
+    // -- Jokers & second-chance tracking
+    @State private var jokers = JokerManager()
+    @State private var showAISuggestion = false
+    @State private var aiDistribution: [String: Int] = [:]
+    
+    // 50-50: keep track of which options are still visible
+    @State private var visibleOptions: [String] = []
+    
+    // x2: track how many guesses made in current question
+    @State private var guessesThisQuestion: Int = 0
     
     var body: some View {
         ZStack {
@@ -179,7 +186,7 @@ struct MainView: View {
                 // GAME OVER SCREEN
                 NotifyView(
                     title: Constant.gameOver,
-                    buttonTitle: Constant.restart) { 
+                    buttonTitle: Constant.restart) {
                         restartGame()
                     }
             }
@@ -187,7 +194,7 @@ struct MainView: View {
                 // CONGRATS SCREEN
                 NotifyView(
                     title: Constant.congrats,
-                    buttonTitle: Constant.toStartMenu) { 
+                    buttonTitle: Constant.toStartMenu) {
                         restartGame()
                     }
             }
@@ -216,28 +223,45 @@ struct MainView: View {
                             LevelView(currentLevel: currentLevel)
                                 .safeAreaPadding(40)
                         } else if let question = currentQuestion {
-                            QuestionView(question: question,
-                                         userSelection: userSelection,
-                                         correctAnswerRevealed: correctAnswerRevealed,
-                                         onOptionSelected: { selected in
-                                userSelection = selected
-                                startCountdown()
-                            })
+                            QuestionView(
+                                question: question,
+                                visibleOptions: visibleOptions,
+                                userSelection: userSelection,
+                                correctAnswerRevealed: correctAnswerRevealed,
+                                jokers: $jokers,
+                                onOptionSelected: { selected in
+                                    userSelectOption(selected)
+                                },
+                                onFiftyFifty: {
+                                    useFiftyFifty(for: question)
+                                },
+                                onAskAI: {
+                                    askAI(for: question)
+                                },
+                                onX2: {
+                                    useX2()
+                                }
+                            )
                         }
                     }
                     Spacer()
                 }
+                // The simple AI suggestion pop-up
+                .sheet(isPresented: $showAISuggestion) {
+                    AISuggestionView(
+                        aiDistribution: $aiDistribution, 
+                        dismissAction: { showAISuggestion = false }
+                    )
+                }
             }
         }
         .animation(.default, value: showStartScreen)
-        .onAppear {
-            // Nothing special on appear. 
-        }
     }
 }
 
 // MARK: - Helpers
 extension MainView {
+    
     private func startGame() {
         withAnimation {
             showStartScreen = false
@@ -245,6 +269,7 @@ extension MainView {
             showCongrats = false
         }
         currentLevel = 1
+        jokers = JokerManager() // reset jokers
         loadQuestion(for: currentLevel)
     }
     
@@ -253,26 +278,40 @@ extension MainView {
         if let randomQ = questionsForLevel.randomElement() {
             currentQuestion = randomQ
         }
+        
         userSelection = nil
         correctAnswerRevealed = false
+        guessesThisQuestion = 0
         
+        // All options visible by default
+        if let question = currentQuestion {
+            visibleOptions = question.options
+        }
+        
+        // Show the level chart for 2 seconds on each new question
         showLevelChart = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             showLevelChart = false
         }
     }
     
+    /// Called when user taps an option in the QuestionView.
+    private func userSelectOption(_ selected: String) {
+        // If there's no selection yet or x2 is active
+        guard userSelection == nil || jokers.usedX2 else { return }
+        userSelection = selected
+        startCountdown()
+    }
+    
     private func startCountdown() {
-        // We start a 3-second countdown. 
-        countdown = 3
+        countdown = 2
+        guessesThisQuestion += 1
         
-        // A simple timer approach
         Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
             countdown -= 1
             
             if countdown <= 0 {
                 timer.invalidate()
-                // Reveal correct answer
                 correctAnswerRevealed = true
                 // Wait 1 second, then check correctness
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
@@ -287,18 +326,29 @@ extension MainView {
               let userSelection = userSelection else { return }
         
         if userSelection == question.correctAnswer {
-            // CORRECT
-            // if this was level 7, show congrats
+            // Correct
+            // If user is on level 7, show final congrats
             if currentLevel == 7 {
                 showCongrats = true
             } else {
-                // Move to next level
                 currentLevel += 1
+                // If user just answered 4th question, unlock x2
+                if currentLevel == 5 {
+                    jokers.x2Unlocked = true
+                }
                 loadQuestion(for: currentLevel)
             }
         } else {
-            // WRONG -> Game Over
-            showGameOver = true
+            // Wrong
+            // If x2 was used and this is the first guess, give second guess
+            if jokers.usedX2 && guessesThisQuestion == 1 {
+                // Reset just the "selection" to allow second try
+                correctAnswerRevealed = false
+                self.userSelection = nil
+            } else {
+                // Game over
+                showGameOver = true
+            }
         }
     }
     
@@ -308,5 +358,131 @@ extension MainView {
             showGameOver = false
             showCongrats = false
         }
+    }
+    
+    // MARK: - Jokers
+    
+    /// 50-50: remove two random incorrect answers from visibleOptions.
+    private func useFiftyFifty(for question: Question) {
+        guard !jokers.usedFiftyFifty else { return }
+        jokers.usedFiftyFifty = true
+        
+        let correct = question.correctAnswer
+        let incorrectOptions = visibleOptions.filter { $0 != correct }
+        
+        // If at least 2 incorrect, remove them
+        if incorrectOptions.count >= 2 {
+            let toRemove = incorrectOptions.shuffled().prefix(2)
+            visibleOptions.removeAll(where: { toRemove.contains($0) })
+        }
+    }
+    
+    /// Ask AI: show a pop-up that displays random distribution.
+    private func askAI(for question: Question) {
+        guard !jokers.usedAskAI else { return }
+        jokers.usedAskAI = true
+        
+        aiDistribution = makeRandomDistribution(for: question)
+        
+        print("aiDistribution before presenting:", aiDistribution) // ✅ Debugging line
+        
+        if !aiDistribution.isEmpty {
+            DispatchQueue.main.async {
+                showAISuggestion = true
+            }
+        } else {
+            print("❌ AI Distribution is empty, not showing sheet")
+        }
+    }
+
+    
+    /// Create random distribution with a tilt toward correct answer.
+    /// The higher the level, the smaller the advantage for the correct answer.
+    private func makeRandomDistribution(for question: Question) -> [String: Int] {
+        let correct = question.correctAnswer
+        var distribution: [String: Int] = [:]
+        
+        // Make correct have a random portion in some range,
+        // others split the remainder.
+        // Higher levels => narrower difference (makes it "harder").
+        
+        let baseCorrectMin = max(20 - question.level * 2, 10)
+        let baseCorrectMax = min(60 - question.level * 3, 50)
+        
+        let correctPercentage = Int.random(in: baseCorrectMin...baseCorrectMax)
+        let othersPercentage = 100 - correctPercentage
+        let otherOptions = question.options.filter { $0 != correct }
+        
+        // Randomly distribute "othersPercentage" among otherOptions
+        var sumOfOthers = 0
+        for i in 0..<otherOptions.count {
+            let isLast = (i == otherOptions.count - 1)
+            if !isLast {
+                let portion = Int.random(in: 0...othersPercentage - sumOfOthers)
+                distribution[otherOptions[i]] = portion
+                sumOfOthers += portion
+            } else {
+                distribution[otherOptions[i]] = othersPercentage - sumOfOthers
+            }
+        }
+        
+        distribution[correct] = correctPercentage
+        return distribution
+    }
+    
+    /// x2: allows a second chance if first guess is wrong.
+    private func useX2() {
+        guard jokers.x2Unlocked && !jokers.usedX2 else { return }
+        jokers.usedX2 = true
+    }
+}
+
+
+struct AISuggestionView: View {
+    @Binding var aiDistribution: [String: Int]
+    let dismissAction: () -> Void
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                if aiDistribution.isEmpty {
+                    Text("AI could not predict an answer.")
+                        .font(.headline)
+                        .foregroundColor(.red)
+                        .padding()
+                    
+                    // Debugging print
+                    Text("Debug: \(aiDistribution.description)")
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                } else {
+                    List {
+                        ForEach(aiDistribution.keys.sorted(), id: \.self) { key in
+                            HStack {
+                                Text(key)
+                                    .font(.headline)
+                                Spacer()
+                                Text("\(aiDistribution[key] ?? 0)%")
+                                    .bold()
+                                    .foregroundColor(key == getMostLikelyAnswer() ? .green : .primary)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("AI Suggestion")
+            .toolbar {
+                Button("Done") {
+                    dismissAction()
+                }
+            }
+            .onAppear {
+                print("🔵 AISuggestionView appeared with data:", aiDistribution) // ✅ Debugging line
+            }
+        }
+    }
+    
+    private func getMostLikelyAnswer() -> String {
+        aiDistribution.max { $0.value < $1.value }?.key ?? ""
     }
 }

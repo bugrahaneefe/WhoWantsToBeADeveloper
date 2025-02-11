@@ -1,11 +1,30 @@
 import SwiftUI
 
+struct JokerManager {
+    var usedFiftyFifty: Bool = false
+    var usedAskAI: Bool = false
+    var usedX2: Bool = false
+    
+    /// Whether x2 Joker is unlocked (after 4th question).
+    var x2Unlocked: Bool = false
+}
+
 struct QuestionView: View {
     let question: Question
+    let visibleOptions: [String]
+    
     let userSelection: String?
     let correctAnswerRevealed: Bool
     
+    @Binding var jokers: JokerManager
+    
+    /// User picks an option
     let onOptionSelected: (String) -> Void
+    
+    /// Jokers
+    let onFiftyFifty: () -> Void
+    let onAskAI: () -> Void
+    let onX2: () -> Void
     
     var body: some View {
         RoundedRectangle(cornerRadius: 10)
@@ -21,17 +40,29 @@ struct QuestionView: View {
                     .stroke(borderColor(), lineWidth: 4)
                     .overlay(
                         VStack(spacing: 20) {
-                            HStack(content: {
-                                Circle()
-                                    .background(Color.blue)
-                                Circle()
-                                    .background(Color.blue)
-                                Circle()
-                                    .background(Color.blue)
-                                Circle()
-                                    .background(Color.blue)
-                            })
-        
+                            // -- JOKER HStack
+                            HStack(spacing: 15) {
+                                // 50-50
+                                JokerIcon(
+                                    label: "50%",
+                                    isUsed: jokers.usedFiftyFifty,
+                                    action: onFiftyFifty
+                                )
+                                // Ask AI
+                                JokerIcon(
+                                    label: "AI",
+                                    isUsed: jokers.usedAskAI,
+                                    action: onAskAI
+                                )
+                                // x2
+                                JokerIcon(
+                                    label: "x2",
+                                    isUsed: jokers.usedX2 || !jokers.x2Unlocked,
+                                    action: onX2
+                                )
+                            }
+                            
+                            // Show image if available
                             if let image = question.image {
                                 image
                                     .resizable()
@@ -49,9 +80,10 @@ struct QuestionView: View {
                                 .multilineTextAlignment(.center)
                                 .monospaced()
                             
-                            ForEach(question.options, id: \.self) { option in
+                            // Visible options after 50-50
+                            ForEach(visibleOptions, id: \.self) { option in
                                 Button(action: {
-                                    if userSelection == nil {
+                                    if userSelection == nil || jokers.usedX2 {
                                         onOptionSelected(option)
                                     }
                                 }, label: {
@@ -72,12 +104,11 @@ struct QuestionView: View {
     }
     
     private func backgroundColor(for option: String) -> Color {
-        if let userSelection = userSelection {
-            if option == userSelection && !correctAnswerRevealed {
-                return Color.orange
-            }
+        // If user has chosen something (or is on second guess with x2) but answer not revealed yet
+        if let userSelection = userSelection, option == userSelection, !correctAnswerRevealed {
+            return Color.orange
         }
-        
+        // If correctAnswerRevealed -> highlight correct in green; if user was wrong, highlight in red
         if correctAnswerRevealed {
             if option == question.correctAnswer {
                 return Color.green
@@ -85,18 +116,40 @@ struct QuestionView: View {
                 return Color.red
             }
         }
-        
         return Color.mint
     }
     
     private func borderColor() -> Color {
         if let userSelection = userSelection {
             if !correctAnswerRevealed {
-                return Color.orange // While waiting for reveal
+                return Color.orange
             } else {
-                return (userSelection == question.correctAnswer) ? Color.green : Color.red // Final color
+                return (userSelection == question.correctAnswer) ? Color.green : Color.red
             }
         }
-        return Color.mint // Default before selection
+        return Color.mint
+    }
+}
+
+/// A small helper view for each Joker icon.
+/// When `isUsed == true`, we disable it and make it gray.
+struct JokerIcon: View {
+    let label: String
+    let isUsed: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button {
+            if !isUsed {
+                action()
+            }
+        } label: {
+            Text(label)
+                .padding(6)
+                .foregroundColor(.white)
+                .background(isUsed ? Color.gray : Color.blue)
+                .cornerRadius(8)
+        }
+        .disabled(isUsed)
     }
 }
