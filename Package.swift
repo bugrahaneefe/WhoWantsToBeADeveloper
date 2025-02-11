@@ -16,6 +16,8 @@ let package = Package(
         .iOSApplication(
             name: "Who Wants To Be A Developer?",
             targets: ["AppModule"],
+            bundleIdentifier: "whowantstobeadeveloper.befe",
+            teamIdentifier: "2U8T5Z4P56",
             displayVersion: "1.0",
             bundleVersion: "1",
             appIcon: .placeholder(icon: .rocket),
@@ -36,6 +38,9 @@ let package = Package(
         .executableTarget(
             name: "AppModule",
             path: ".",
+            resources: [
+                .process("Resources")
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("BareSlashRegexLiterals")
             ]

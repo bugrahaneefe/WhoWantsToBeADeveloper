@@ -1,25 +1,22 @@
 import SwiftUI
 
-private enum Constant {
-    static let start = "Start"
-}
-
 struct StartView: View {
     let onStart: () -> Void
-    
+    let finalText: String = "Who wants to \nbe a \ndeveloper ?"
+
     // Animation states
     @State private var moveRectangles = false    
     @State var text: String = ""
-    let finalText: String = " Who wants to \n be a \n developer ?"
     
     var body: some View {
         ZStack {
-            // HStack containing two gradient rectangles
+            
             HStack(spacing: .zero) {
+                
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            gradient: Gradient(colors: [Color.mint]),
+                            gradient: Gradient(colors: [Color.indigo]),
                             startPoint: .trailing,
                             endPoint: .leading
                         )
@@ -29,7 +26,7 @@ struct StartView: View {
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            gradient: Gradient(colors: [Color.mint]),
+                            gradient: Gradient(colors: [Color.indigo]),
                             startPoint: .trailing,
                             endPoint: .leading
                         )
@@ -39,27 +36,38 @@ struct StartView: View {
             .animation(.easeInOut(duration: 0.8), value: moveRectangles)
             
             VStack {
-                // Text appears below button
+                
                 Text(text)
-                    .font(.system(.title, design: .monospaced))
-                    .bold()
+                    .font(.system(size: 32, weight: .bold, design: .monospaced))
                     .foregroundColor(.white)
-                    .multilineTextAlignment(.leading)
-                    .safeAreaPadding(100)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(nil)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 100)
+                
                 Spacer()
-                // Button remains centered and doesn't move
+
                 Button(Constant.start) {
                     typeWriter()
                 }
-                .font(.system(.title, design: .monospaced))
+                .font(.system(size: 32, weight: .bold, design: .monospaced))
+                .foregroundStyle(Color.indigo)
                 .padding()
+                .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 80)
                 .background(Color.white)
-                .cornerRadius(10)
-                .safeAreaPadding(100)
+                .cornerRadius(12)
+                .shadow(radius: 10)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 40)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
             }
             .padding(.all)
         }
-        .edgesIgnoringSafeArea(.all) // Ensure rectangles extend to screen edges
+        .edgesIgnoringSafeArea(.all)
     }    
 }
 
@@ -69,7 +77,7 @@ extension StartView {
             text = ""
         }
         if position < finalText.count {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 text.append(finalText[position])
                 typeWriter(at: position + 1)
             }

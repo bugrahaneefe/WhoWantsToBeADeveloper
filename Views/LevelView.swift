@@ -5,32 +5,31 @@ struct LevelView: View {
         "1......Rookie Developer",
         "2......Intern Developer",
         "3......Junior Developer",
-        "4......Mid-level Developer",
+        "4...Mid-level Developer",
         "5......Senior Developer",
-        "6......Tech Lead",
-        "7......Apple Developer"
+        "6.............Tech Lead",
+        "7.......Apple Developer"
     ]
     
     var currentLevel: Int
     
     var body: some View {
-        VStack {
-            ForEach(levels.indices.reversed(), id: \.self) { index in
-                let levelText = levels[index]
-                
-                Text(levelText)
-                    .foregroundColor(index + 1 == currentLevel ? Color.orange : Color.white)
+        VStack(alignment: .leading) {
+            ForEach(levels.indices.reversed(), id: \.self) { index in                
+                Text(levels[index])
+                    .foregroundColor(index + 1 == currentLevel ? Color.indigo : Color.white)
                     .font(.headline)
                     .padding(5)
                     .monospaced()
             }
         }
-        .padding(30)
+        .padding(.vertical, 30)
+        .padding(.horizontal, 15)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(
                     LinearGradient(
-                        gradient: Gradient(colors: [Color.mint]),
+                        gradient: Gradient(colors: [Color.orange]),
                         startPoint: .bottom,
                         endPoint: .top
                     )
@@ -40,6 +39,5 @@ struct LevelView: View {
                         .stroke(Color.white, lineWidth: 2)
                 )
         )
-        .padding()
     }
 }
