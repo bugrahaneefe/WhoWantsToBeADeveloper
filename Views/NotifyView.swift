@@ -4,7 +4,7 @@ struct NotifyView: View {
     let title: String
     let buttonTitle: String
     
-    // A closure to call when the button is pressed.
+    // a closure to call when the button is pressed.
     let action: () -> Void
     
     var body: some View {
@@ -17,7 +17,9 @@ struct NotifyView: View {
                 .fill(Color.indigo)
                 .frame(width: 300, height: 200)
                 .overlay(
+                    
                     VStack(spacing: 20) {
+                        
                         Text(title)
                             .font(.title3)
                             .bold()
@@ -29,6 +31,7 @@ struct NotifyView: View {
                             .frame(maxWidth: .infinity)
                         
                         Button(action: action) {
+                            
                             Text(buttonTitle)
                                 .font(.headline)
                                 .padding()

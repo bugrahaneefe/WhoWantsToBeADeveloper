@@ -7,10 +7,10 @@ struct QuestionView: View {
     let userSelection: String?
     let correctAnswerRevealed: Bool
     
-    /// User picks an option.
+    // user picks an option.
     let onOptionSelected: (String) -> Void
     
-    /// Jokers.
+    // jokers.
     let onFiftyFifty: () -> Void
     let onAskAI: () -> Void
     let onX2: () -> Void
@@ -20,9 +20,12 @@ struct QuestionView: View {
     @Binding var lockedWrongX2Option: String?
     
     var body: some View {
+        
         ZStack {
+            
             RoundedRectangle(cornerRadius: 20)
                 .fill(
+                    
                     LinearGradient(
                         gradient: Gradient(colors: [Color.indigo, Color.indigo, Color.indigo, Color.indigo]),
                         startPoint: .bottom,
@@ -30,26 +33,31 @@ struct QuestionView: View {
                     )
                 )
                 .overlay(
+                    
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(borderColor(), lineWidth: 4)
                         .overlay(
+                            
+                            // Main content
                             VStack(spacing: 20) {
-                                // JOKERS
+                                
+                                // jokers
                                 HStack(spacing: 15) {
-                                    // 50-50.
+                                    
                                     JokerIcon(
                                         label: "50%",
                                         isUsed: jokers.usedFiftyFifty,
                                         action: onFiftyFifty
                                     )
-                                    // Ask AI.
+                                    
                                     JokerIcon(
                                         label: "AI",
                                         isUsed: jokers.usedAskAI,
                                         action: onAskAI
                                     )
+                                    
                                     if jokers.x2Unlocked {
-                                        // x2.
+                                        
                                         JokerIcon(
                                             label: "x2",
                                             isUsed: jokers.usedX2 || !jokers.x2Unlocked,
@@ -58,7 +66,7 @@ struct QuestionView: View {
                                     }
                                 }
                                 
-                                // Show image if question has.
+                                // optional image
                                 if let image = question.image {
                                     image
                                         .resizable()
@@ -68,6 +76,7 @@ struct QuestionView: View {
                                             RoundedRectangle(cornerRadius: 10)
                                                 .stroke(Color.white, lineWidth: 2)
                                         )
+                                        .frame(maxHeight: 150)
                                         .onTapGesture {
                                             withAnimation {
                                                 isImageEnlarged.toggle()
@@ -75,36 +84,36 @@ struct QuestionView: View {
                                         }
                                 }
                                 
+                                // question text
                                 Text(question.text)
                                     .font(.title2)
                                     .foregroundStyle(.white)
                                     .multilineTextAlignment(.center)
                                     .monospaced()
                                     .lineLimit(3)
-                                    .minimumScaleFactor(0.5)
+                                    .minimumScaleFactor(0.3)
                                     .frame(maxWidth: .infinity)
                                     .padding(.horizontal, 10)
                                 
-                                // Visible options after 50-50.
+                                // options
                                 ForEach(visibleOptions, id: \.self) { option in
-                                    Button(action: {
+                                    
+                                    Button {
                                         if userSelection == nil || jokers.usedX2 {
                                             if lockedWrongX2Option != option {
                                                 onOptionSelected(option)
                                             }
                                         }
-                                    }, label: {
-                                        ScrollView {
-                                            Text(option)
-                                                .padding()
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                                .lineLimit(nil)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                                .monospaced()
-                                                .foregroundStyle(Color.indigo)
-                                        }
-                                        .scrollIndicators(.hidden)
-                                    })
+                                    } label: {
+                                        
+                                        Text(option)
+                                            .padding()
+                                            .frame(maxWidth: .infinity)
+                                            .lineLimit(2)
+                                            .minimumScaleFactor(0.3)
+                                            .monospaced()
+                                            .foregroundStyle(Color.indigo)
+                                    }
                                     .foregroundColor(.white)
                                     .background(backgroundColor(for: option))
                                     .cornerRadius(8)
@@ -113,38 +122,45 @@ struct QuestionView: View {
                                     .shadow(radius: 15)
                                 }
                             }
-                                .padding()
+                            .padding()
                         )
                 )
                 .safeAreaPadding(20)
                 .padding(.horizontal, 10)
-            if isImageEnlarged {
-                if let image = question.image {
-                    image
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 250)
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.white, lineWidth: 2)
-                        )
-                        .onTapGesture {
-                            withAnimation {
-                                isImageEnlarged.toggle()
-                            }
+            
+            // Enlarged image overlay if image is too small to see
+            if isImageEnlarged, let image = question.image {
+                
+                Color.black.opacity(0.5)
+                    .ignoresSafeArea()
+                
+                image
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 250)
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white, lineWidth: 2)
+                    )
+                    .onTapGesture {
+                        withAnimation {
+                            isImageEnlarged.toggle()
                         }
-                }
+                    }
             }
         }
     }
+}
+
+extension QuestionView {
     
     private func backgroundColor(for option: String) -> Color {
-        // If user selected an answer but answer is not revealed yet.
+        // if user selected an answer but answer is not revealed yet.
         if let userSelection = userSelection, option == userSelection, !correctAnswerRevealed {
             return Color.orange
         }
-        // If correct answer is revealed, highlight in green. If incorrect answer is revealed, highlight in red.
+        // if correct answer is revealed, highlight in green. If incorrect answer is revealed, highlight in red.
         if correctAnswerRevealed {
             if option == question.correctAnswer {
                 return Color.green

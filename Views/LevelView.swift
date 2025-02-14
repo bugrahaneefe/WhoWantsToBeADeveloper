@@ -1,22 +1,15 @@
 import SwiftUI
 
-struct LevelView: View {
-    let levels = [
-        "1......Rookie Developer",
-        "2......Intern Developer",
-        "3......Junior Developer",
-        "4...Mid-level Developer",
-        "5......Senior Developer",
-        "6.............Tech Lead",
-        "7.......Apple Developer"
-    ]
-    
+struct LevelView: View {    
     var currentLevel: Int
     
     var body: some View {
+        
         VStack(alignment: .leading) {
-            ForEach(levels.indices.reversed(), id: \.self) { index in                
-                Text(levels[index])
+            
+            ForEach(Constant.levels.indices.reversed(), id: \.self) { index in
+                
+                Text(Constant.levels[index])
                     .foregroundColor(index + 1 == currentLevel ? Color.indigo : Color.white)
                     .font(.headline)
                     .padding(5)
@@ -28,6 +21,7 @@ struct LevelView: View {
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(
+                    
                     LinearGradient(
                         gradient: Gradient(colors: [Color.orange]),
                         startPoint: .bottom,
@@ -35,6 +29,7 @@ struct LevelView: View {
                     )
                 )
                 .overlay(
+                    
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(Color.white, lineWidth: 2)
                 )

@@ -17,6 +17,7 @@ struct StartView: View {
                 
                 Rectangle()
                     .fill(
+                        
                         LinearGradient(
                             gradient: Gradient(colors: [Color.indigo]),
                             startPoint: .trailing,
@@ -27,6 +28,7 @@ struct StartView: View {
                 
                 Rectangle()
                     .fill(
+                        
                         LinearGradient(
                             gradient: Gradient(colors: [Color.indigo]),
                             startPoint: .trailing,
@@ -95,11 +97,5 @@ extension StartView {
                 onStart()
             }
         }
-    }
-}
-
-extension String {
-    subscript(offset: Int) -> Character {
-        self[index(startIndex, offsetBy: offset)]
     }
 }
